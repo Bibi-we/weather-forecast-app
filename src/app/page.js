@@ -12,7 +12,7 @@ export default function Home() {
   const lat = 51.5072;
   const lon = -0.1276;
 
-  // 🔑 Your API key stored securely in .env.local
+  // 🔑  API key stored securely in .env.local
   const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
 
   // ⛅ Fetch weather data when the component first loads
