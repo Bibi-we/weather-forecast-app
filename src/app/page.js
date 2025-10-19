@@ -1,103 +1,118 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // 🌤 React states for weather data, loading, and errors
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  // 🌍 London coordinates
+  const lat = 51.5072;
+  const lon = -0.1276;
+
+  // 🔑 Your API key stored securely in .env.local
+  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_KEY;
+
+  // ⛅ Fetch weather data when the component first loads
+  useEffect(() => {
+    async function fetchWeather() {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`
+        );
+
+        if (!res.ok) {
+          throw new Error(`API request failed with status ${res.status}`);
+        }
+
+        const json = await res.json();
+        setData(json);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchWeather();
+  }, []);
+
+  // 🧭 Handle loading and errors
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!data) return <p>No data available</p>;
+
+  // ✅ Main UI layout
+  return (
+    <main className="min-h-screen p-6 bg-sky-100 text-gray-800">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        5-Day Weather Forecast — London
+      </h1>
+
+      {/* Grid container for forecast cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {Array.from(
+          new Map(
+            data.list.map((item) => [
+              // Convert timestamp → readable date string (e.g., "Sat, Oct 19")
+              new Date(item.dt * 1000).toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              }),
+              item, // the forecast entry
+            ])
+          ).values() // get only one item per date
+        )
+          .slice(0, 5) // show 5 unique days
+          .map((day) => {
+            // 🎨 Card-level dynamic background based on weather type
+            const weatherType = day.weather[0].main.toLowerCase();
+            const cardBg =
+              weatherType.includes("rain")
+                ? "from-blue-200 to-blue-500"
+                : weatherType.includes("cloud")
+                ? "from-gray-200 to-gray-400"
+                : weatherType.includes("clear")
+                ? "from-yellow-100 to-orange-300"
+                : "from-sky-100 to-blue-300";
+
+            return (
+              <div
+                key={day.dt}
+                className={`bg-gradient-to-br ${cardBg} p-4 rounded-lg shadow flex flex-col items-center
+                  transform transition-transform duration-300 hover:scale-105 hover:shadow-xl`}
+              >
+                {/* 📅 Date */}
+                <p className="font-semibold">
+                  {new Date(day.dt * 1000).toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+
+                {/* 🌤 Weather icon */}
+                <img
+                  src={`https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`}
+                  alt={day.weather[0].description}
+                />
+
+                {/* ☁️ Description */}
+                <p className="capitalize">{day.weather[0].description}</p>
+
+                {/* 🌡️ Temperature */}
+                <p>🌡️ {Math.round(day.main.temp)}°C</p>
+
+                {/* 💨 Wind speed */}
+                <p>💨 {Math.round(day.wind.speed)} m/s</p>
+              </div>
+            );
+          })}
+      </div>
+    </main>
   );
 }
